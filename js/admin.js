@@ -1,10 +1,10 @@
 // --- CONFIGURACIÓN DE SUPABASE ---
-        const SB_URL = "https://ndqzyplsiqigsynweihk.supabase.co";
-        const SB_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kcXp5cGxzaXFpZ3N5bndlaWhrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODQyOTQ4MiwiZXhwIjoyMDc0MDA1NDgyfQ.LYocdE6jGG5B-0n_2Ke0nUpkrAKC7iBBRV7RmgjATD8";
+        const SB_URL = "https://cyjmulwnwmpkosmnjava.supabase.co";
+        const SB_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5am11bHdud21wa29zbW5qYXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI3NjA5NDAsImV4cCI6MjA3ODMzNjk0MH0.4oNJ9AOGa0qkJiTfaGCexrUmh7QEXhxygC_CC9lVMLI";
 
         const BASE_API_URL = `${SB_URL}/rest/v1`;
         const AUTH_API_URL = `${SB_URL}/auth/v1`;
-        const STORAGE_BUCKET = "donde_peter";
+        const STORAGE_BUCKET = "menu";
         const STORAGE_API_URL = `${SB_URL}/storage/v1/object/public/${STORAGE_BUCKET}`;
 
         // --- ESTADO GLOBAL ---
