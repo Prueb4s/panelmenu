@@ -915,7 +915,6 @@
             let itemsHtml = order.order_items.map(item => {
                 const itemQuantity = item.qty || item.quantity || 0; 
                 const itemPrice = item.price || 0;
-                const sizesName = sizes.name || 0;
                 const itemTotal = itemPrice * itemQuantity;
                 totalItemsCount += itemQuantity;
                 subtotalItemsPrice += itemTotal;
