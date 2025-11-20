@@ -423,7 +423,7 @@ const loadProducts = async () => {
   if (stockFilter === 'in_stock') filters.push('stock=gt.0');
   if (stockFilter === 'out_stock') filters.push('stock=eq.0');
 
-  const selectFields = 'id,name,price,stock,isOffer,image,featured,bestSeller';
+  const selectFields = 'id,name,price,stock,isOffer,image,featured,bestSeller,sizes';
   const filterQuery = filters.length > 0 ? '&' + filters.join('&') : '';
   const url = `${BASE_API_URL}/products?select=${selectFields}${filterQuery}`;
 
@@ -521,8 +521,9 @@ const deleteProduct = async (id) => {
 // --- PRODUCTOS ---
 
 // Render helper para editor de sizes (JSONB) en modal de producto
+// Ahora cada size puede incluir: name, price, stock
 const renderSizesEditorHTML = (sizes = []) => {
-  // sizes: array of { name, price }
+  // sizes: array of { name, price, stock }
   let html = `
     <div class="pt-4 border-t">
       <span class="text-gray-700 font-medium">Tamaños / Variantes (sizes)</span>
@@ -532,10 +533,12 @@ const renderSizesEditorHTML = (sizes = []) => {
   (sizes || []).forEach((s, idx) => {
     const nm = s && s.name ? (String(s.name).replace(/"/g, '&quot;')) : '';
     const pr = (s && (s.price !== undefined && s.price !== null)) ? s.price : '';
+    const st = (s && (s.stock !== undefined && s.stock !== null)) ? s.stock : '';
     html += `
       <div class="size-row flex gap-2 items-center" data-index="${idx}">
-        <input class="size-name px-2 py-1 border border-gray-300 rounded w-1/2" placeholder="Nombre (ej. Grande)" value="${nm}">
-        <input class="size-price px-2 py-1 border border-gray-300 rounded w-1/3" placeholder="Precio" type="number" value="${pr}">
+        <input class="size-name px-2 py-1 border border-gray-300 rounded w-2/5" placeholder="Nombre (ej. Grande)" value="${nm}">
+        <input class="size-price px-2 py-1 border border-gray-300 rounded w-1/5" placeholder="Precio" type="number" value="${pr}">
+        <input class="size-stock px-2 py-1 border border-gray-300 rounded w-1/5" placeholder="Stock" type="number" value="${st}">
         <button type="button" class="remove-size-btn px-2 py-1 bg-red-500 text-white rounded">Eliminar</button>
       </div>
     `;
@@ -544,8 +547,9 @@ const renderSizesEditorHTML = (sizes = []) => {
   if (!sizes || sizes.length === 0) {
     html += `
       <div class="size-row flex gap-2 items-center" data-index="0">
-        <input class="size-name px-2 py-1 border border-gray-300 rounded w-1/2" placeholder="Nombre (ej. Grande)" value="">
-        <input class="size-price px-2 py-1 border border-gray-300 rounded w-1/3" placeholder="Precio" type="number" value="">
+        <input class="size-name px-2 py-1 border border-gray-300 rounded w-2/5" placeholder="Nombre (ej. Grande)" value="">
+        <input class="size-price px-2 py-1 border border-gray-300 rounded w-1/5" placeholder="Precio" type="number" value="">
+        <input class="size-stock px-2 py-1 border border-gray-300 rounded w-1/5" placeholder="Stock" type="number" value="">
         <button type="button" class="remove-size-btn px-2 py-1 bg-red-500 text-white rounded">Eliminar</button>
       </div>
     `;
@@ -555,7 +559,7 @@ const renderSizesEditorHTML = (sizes = []) => {
       </div>
       <div class="mt-2">
         <button id="add-size-btn" type="button" class="px-3 py-2 bg-gray-200 text-gray-800 rounded">Añadir tamaño</button>
-        <p class="text-xs text-gray-500 mt-2">Los cambios aquí actualizarán la columna JSONB 'sizes' de la tabla products.</p>
+        <p class="text-xs text-gray-500 mt-2">Los cambios aquí actualizarán la columna JSONB 'sizes' de la tabla products. Cada tamaño puede llevar 'name', 'price' y 'stock'.</p>
       </div>
     </div>
   `;
@@ -571,8 +575,9 @@ const attachSizesEditorHandlers = () => {
       const div = document.createElement('div');
       div.className = 'size-row flex gap-2 items-center';
       div.innerHTML = `
-        <input class="size-name px-2 py-1 border border-gray-300 rounded w-1/2" placeholder="Nombre (ej. Grande)" value="">
-        <input class="size-price px-2 py-1 border border-gray-300 rounded w-1/3" placeholder="Precio" type="number" value="">
+        <input class="size-name px-2 py-1 border border-gray-300 rounded w-2/5" placeholder="Nombre (ej. Grande)" value="">
+        <input class="size-price px-2 py-1 border border-gray-300 rounded w-1/5" placeholder="Precio" type="number" value="">
+        <input class="size-stock px-2 py-1 border border-gray-300 rounded w-1/5" placeholder="Stock" type="number" value="">
         <button type="button" class="remove-size-btn px-2 py-1 bg-red-500 text-white rounded">Eliminar</button>
       `;
       container.appendChild(div);
@@ -581,6 +586,7 @@ const attachSizesEditorHandlers = () => {
     };
   }
 
+  // attach remove listeners existing
   document.querySelectorAll('.remove-size-btn').forEach(btn => {
     btn.onclick = (e) => {
       const row = btn.closest('.size-row');
@@ -608,10 +614,10 @@ const showProductModal = (product) => {
       } else if (Array.isArray(raw)) {
         parsedSizes = raw;
       } else if (typeof raw === 'object') {
-        if (raw.name !== undefined || raw.price !== undefined) {
+        if (raw.name !== undefined || raw.price !== undefined || raw.stock !== undefined) {
           parsedSizes = [raw];
         } else {
-          parsedSizes = Object.values(raw).filter(v => v && (v.name !== undefined || v.price !== undefined));
+          parsedSizes = Object.values(raw).filter(v => v && (v.name !== undefined || v.price !== undefined || v.stock !== undefined));
         }
       }
     }
@@ -750,12 +756,15 @@ const saveProduct = async () => {
       rows.forEach(r => {
         const nmEl = r.querySelector('.size-name');
         const prEl = r.querySelector('.size-price');
-        if (!nmEl || !prEl) return;
+        const stEl = r.querySelector('.size-stock');
+        if (!nmEl) return;
         const nm = nmEl.value.trim();
-        const pr = prEl.value !== '' ? Number(prEl.value) : null;
+        const pr = prEl && prEl.value !== '' ? Number(prEl.value) : null;
+        const st = stEl && stEl.value !== '' ? parseInt(stEl.value) : null;
         if (nm !== '') {
           const entry = { name: nm };
           if (!isNaN(pr) && pr !== null) entry.price = pr;
+          if (!isNaN(st) && st !== null) entry.stock = st;
           sizesArr.push(entry);
         }
       });
@@ -773,12 +782,8 @@ const saveProduct = async () => {
       image: imageUrl ? [imageUrl] : []
     };
 
-    // Incluir sizes sólo si hay entries
-    if (sizesArr.length > 0) {
-      productData.sizes = sizesArr;
-    } else {
-      productData.sizes = [];
-    }
+    // Incluir sizes sólo si hay entries (guardar como array, puede ser vacío)
+    productData.sizes = sizesArr;
 
     let url;
     let options;
